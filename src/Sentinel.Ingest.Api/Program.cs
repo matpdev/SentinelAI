@@ -2,9 +2,19 @@ using System.Text.Json;
 using Amazon.Runtime;
 using Amazon.SQS;
 using Amazon.SQS.Model;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
 using Sentinel.Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService("Sentinel.Ingest.Api"))
+    .WithTracing(t => t.AddAspNetCoreInstrumentation())
+    .WithMetrics(m => m
+        .AddAspNetCoreInstrumentation()
+        .AddPrometheusExporter());
 
 builder.Services.AddSingleton<IAmazonSQS>(_ =>
 {
@@ -20,6 +30,7 @@ builder.Services.AddSingleton<IAmazonSQS>(_ =>
 
 var app = builder.Build();
 
+app.MapPrometheusScrapingEndpoint();
 app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "Sentinel.Ingest.Api" }));
 
 app.MapPost("/api/v1/events", async (

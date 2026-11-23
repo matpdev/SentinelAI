@@ -1,7 +1,9 @@
+using System.Diagnostics;
 using System.Text.Json;
 using Amazon.SQS;
 using Amazon.SQS.Model;
 using Sentinel.Diagnostic.Worker.Data;
+using Sentinel.Diagnostic.Worker.Diagnostics;
 using Sentinel.Diagnostic.Worker.Services;
 using Sentinel.Shared.Diagnostics;
 using Sentinel.Shared.Models;
@@ -15,7 +17,8 @@ public sealed class Worker(
     IConfiguration config,
     IncidentRepository repository,
     IIncidentDiagnosticService diagnosticService,
-    IIncidentNotifier notifier) : BackgroundService
+    IIncidentNotifier notifier,
+    SentinelMetrics metrics) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -71,7 +74,13 @@ public sealed class Worker(
 
         if (upsert.IsNewIncident)
         {
+            var sw = Stopwatch.StartNew();
             var diagnosis = await diagnosticService.DiagnoseAsync(evt, sanitizedMessage, sanitizedStack, ct);
+            sw.Stop();
+
+            metrics.RecordDiagnosisDuration(sw.Elapsed.TotalMilliseconds, evt.ServiceName);
+            metrics.RecordNewIncident(evt.ServiceName, diagnosis.Severity);
+
             await repository.SaveDiagnosisAsync(upsert.IncidentId, diagnosis, ct);
             await notifier.NotifyAsync(upsert.IncidentId, evt, diagnosis, ct);
 
@@ -81,6 +90,7 @@ public sealed class Worker(
         }
         else
         {
+            metrics.RecordDeduplicatedIncident(evt.ServiceName);
             logger.LogInformation(
                 "Deduplicated incident {IncidentId} (occurrences: {Count})",
                 upsert.IncidentId, upsert.OccurrenceCount);

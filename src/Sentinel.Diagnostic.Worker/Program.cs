@@ -2,12 +2,20 @@ using Amazon.Runtime;
 using Amazon.SQS;
 using Microsoft.Extensions.AI;
 using OllamaSharp;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
 using Sentinel.Diagnostic.Worker;
 using Sentinel.Diagnostic.Worker.Data;
+using Sentinel.Diagnostic.Worker.Diagnostics;
 using Sentinel.Diagnostic.Worker.Services;
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService("Sentinel.Diagnostic.Worker"))
+    .WithMetrics(m => m.AddMeter(SentinelMetrics.MeterName));
+
+builder.Services.AddSingleton<SentinelMetrics>();
 builder.Services.AddSingleton<IAmazonSQS>(_ =>
 {
     var serviceUrl = builder.Configuration["Sentinel:SqsServiceUrl"];
