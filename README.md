@@ -44,8 +44,8 @@ flowchart LR
 3. Iniciar os serviços (em terminais separados):
    ```bash
    dotnet run --project src/Sentinel.Diagnostic.Worker
-   dotnet run --project src/Sentinel.Ingest.Api --urls http://localhost:5000
-   dotnet run --project src/Sentinel.SampleTarget.Api --urls http://localhost:5100
+   dotnet run --project src/Sentinel.Ingest.Api --urls http://0.0.0.0:5000
+   dotnet run --project src/Sentinel.SampleTarget.Api --urls http://0.0.0.0:5100
    ```
 
 4. Simular falhas reais e acompanhar no **Grafana** (`http://localhost:3000`, login `admin`/`admin`):

@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\src\Sentinel.Shared\Sentinel.Shared.csproj" />
     <ProjectReference Include="..\..\src\Sentinel.Diagnostic.Worker\Sentinel.Diagnostic.Worker.csproj" />
     <ProjectReference Include="..\..\src\Sentinel.Client\Sentinel.Client.csproj" />
+    <ProjectReference Include="..\..\src\Sentinel.Core\Sentinel.Core.csproj" />
   </ItemGroup>
 
 </Project>

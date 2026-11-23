@@ -1,10 +1,10 @@
-using System.Text.Json;
 using Amazon.Runtime;
 using Amazon.SQS;
-using Amazon.SQS.Model;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+using Sentinel.Core.Abstractions;
+using Sentinel.Ingest.Api.Infrastructure;
 using Sentinel.Shared.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,27 +16,35 @@ builder.Services.AddOpenTelemetry()
         .AddAspNetCoreInstrumentation()
         .AddPrometheusExporter());
 
-builder.Services.AddSingleton<IAmazonSQS>(_ =>
+var queueProvider = builder.Configuration["Sentinel:Queue:Provider"] ?? "Sqs";
+if (queueProvider.Equals("InMemory", StringComparison.OrdinalIgnoreCase))
 {
-    var serviceUrl = builder.Configuration["Sentinel:SqsServiceUrl"];
-    if (!string.IsNullOrWhiteSpace(serviceUrl))
+    builder.Services.AddSingleton<IIncidentQueuePublisher, InMemoryIncidentQueuePublisher>();
+}
+else
+{
+    builder.Services.AddSingleton<IAmazonSQS>(_ =>
     {
-        var config = new AmazonSQSConfig { ServiceURL = serviceUrl };
-        return new AmazonSQSClient(new BasicAWSCredentials("test", "test"), config);
-    }
+        var serviceUrl = builder.Configuration["Sentinel:SqsServiceUrl"];
+        if (!string.IsNullOrWhiteSpace(serviceUrl))
+        {
+            var config = new AmazonSQSConfig { ServiceURL = serviceUrl };
+            return new AmazonSQSClient(new BasicAWSCredentials("test", "test"), config);
+        }
 
-    return new AmazonSQSClient();
-});
+        return new AmazonSQSClient();
+    });
+    builder.Services.AddSingleton<IIncidentQueuePublisher, SqsIncidentQueuePublisher>();
+}
 
 var app = builder.Build();
 
 app.MapPrometheusScrapingEndpoint();
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "Sentinel.Ingest.Api" }));
+app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "Sentinel.Ingest.Api", queueProvider }));
 
 app.MapPost("/api/v1/events", async (
     IncidentEvent evt,
-    IAmazonSQS sqs,
-    IConfiguration config,
+    IIncidentQueuePublisher publisher,
     CancellationToken ct) =>
 {
     if (string.IsNullOrWhiteSpace(evt.ServiceName) ||
@@ -46,17 +54,8 @@ app.MapPost("/api/v1/events", async (
         return Results.BadRequest(new { error = "ServiceName, ExceptionType and Message are required." });
     }
 
-    var queueUrl = config["Sentinel:SqsQueueUrl"]
-        ?? throw new InvalidOperationException("Sentinel:SqsQueueUrl is not configured.");
-
     var normalized = evt with { OccurredAt = evt.OccurredAt ?? DateTimeOffset.UtcNow };
-    var payload = JsonSerializer.Serialize(normalized);
-
-    await sqs.SendMessageAsync(new SendMessageRequest
-    {
-        QueueUrl = queueUrl,
-        MessageBody = payload
-    }, ct);
+    await publisher.PublishAsync(normalized, ct);
 
     return Results.Accepted(value: new { status = "queued", traceId = normalized.TraceId });
 });

@@ -1,13 +1,12 @@
 using System.Text.Json;
 using Dapper;
 using Npgsql;
+using Sentinel.Core.Abstractions;
 using Sentinel.Shared.Models;
 
 namespace Sentinel.Diagnostic.Worker.Data;
 
-public sealed record UpsertIncidentResult(Guid IncidentId, bool IsNewIncident, int OccurrenceCount);
-
-public sealed class IncidentRepository(string connectionString)
+public sealed class IncidentRepository(string connectionString) : IIncidentRepository
 {
     public async Task<UpsertIncidentResult> UpsertIncidentAndRecordEventAsync(
         string fingerprint,

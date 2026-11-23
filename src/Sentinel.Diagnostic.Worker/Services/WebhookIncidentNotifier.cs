@@ -1,12 +1,8 @@
 using System.Net.Http.Json;
+using Sentinel.Core.Abstractions;
 using Sentinel.Shared.Models;
 
 namespace Sentinel.Diagnostic.Worker.Services;
-
-public interface IIncidentNotifier
-{
-    Task NotifyAsync(Guid incidentId, IncidentEvent evt, IncidentDiagnosis diagnosis, CancellationToken ct);
-}
 
 public sealed class WebhookIncidentNotifier(
     HttpClient httpClient,
@@ -50,5 +46,16 @@ public sealed class WebhookIncidentNotifier(
         {
             logger.LogWarning(ex, "Failed to send webhook notification for incident {IncidentId}", incidentId);
         }
+    }
+}
+
+public sealed class LoggingIncidentNotifier(ILogger<LoggingIncidentNotifier> logger) : IIncidentNotifier
+{
+    public Task NotifyAsync(Guid incidentId, IncidentEvent evt, IncidentDiagnosis diagnosis, CancellationToken ct)
+    {
+        logger.LogWarning(
+            "New incident {IncidentId} [{Severity}] in {ServiceName} ({Endpoint}): {Hypothesis}",
+            incidentId, diagnosis.Severity, evt.ServiceName, evt.Endpoint ?? "n/a", diagnosis.RootCauseHypothesis);
+        return Task.CompletedTask;
     }
 }

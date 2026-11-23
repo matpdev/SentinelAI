@@ -3,6 +3,7 @@ using Microsoft.Extensions.AI;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Timeout;
+using Sentinel.Core.Abstractions;
 using Sentinel.Shared.Models;
 
 namespace Sentinel.Diagnostic.Worker.Services;

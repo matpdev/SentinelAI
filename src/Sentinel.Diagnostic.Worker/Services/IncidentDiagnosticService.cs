@@ -1,19 +1,10 @@
+using Sentinel.Core.Abstractions;
 using Sentinel.Shared.Models;
 
 namespace Sentinel.Diagnostic.Worker.Services;
 
-public interface IIncidentDiagnosticService
-{
-    Task<IncidentDiagnosis> DiagnoseAsync(
-        IncidentEvent evt,
-        string sanitizedMessage,
-        string? sanitizedStackTrace,
-        CancellationToken ct);
-}
-
 /// <summary>
-/// Deterministic baseline diagnostic service.
-/// Phase 2 replaces/wraps this with Microsoft.Extensions.AI (Ollama / OpenAI) + Polly fallback.
+/// Deterministic baseline diagnostic service used as fallback or when AI provider is set to Heuristic.
 /// </summary>
 public sealed class FallbackHeuristicDiagnosticService : IIncidentDiagnosticService
 {
