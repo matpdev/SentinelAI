@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Sentinel.Shared\Sentinel.Shared.csproj" />
+    <ProjectReference Include="..\Sentinel.Client\Sentinel.Client.csproj" />
   </ItemGroup>
 
 </Project>

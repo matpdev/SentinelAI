@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Sentinel.Client/Sentinel.Client.csproj" />
     <Project Path="src/Sentinel.Diagnostic.Worker/Sentinel.Diagnostic.Worker.csproj" />
     <Project Path="src/Sentinel.Ingest.Api/Sentinel.Ingest.Api.csproj" />
     <Project Path="src/Sentinel.SampleTarget.Api/Sentinel.SampleTarget.Api.csproj" />
