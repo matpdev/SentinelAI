@@ -1,19 +1,21 @@
 # SentinelAI
 
-Copiloto de **AIOps & Diagnóstico Automatizado de Incidentes** construído em **.NET** com arquitetura orientada a eventos (**AWS SQS + S3 + PostgreSQL/Dapper**).
+Copiloto de **AIOps & Diagnóstico Automatizado de Incidentes** construído em **.NET** com arquitetura orientada a eventos (**AWS SQS + S3 + PostgreSQL/Dapper**), **Microsoft.Extensions.AI** e **Polly**.
 
-## Arquitetura (Fase 1 - Base)
+## Arquitetura (Fase 2)
 
 - **`Sentinel.Ingest.Api`**: Minimal API que recebe eventos/alertas de erro (`POST /api/v1/events`) e enfileira de forma assíncrona no **SQS**.
-- **`Sentinel.Diagnostic.Worker`**: Worker Service que consome o SQS, sanitiza PII (`PiiSanitizer`), calcula fingerprint (`IncidentFingerprinter`), deduplica no **PostgreSQL** via **Dapper** e gera diagnóstico inicial.
+- **`Sentinel.Diagnostic.Worker`**: Worker Service que consome o SQS, sanitiza PII (`PiiSanitizer`), calcula fingerprint (`IncidentFingerprinter`), deduplica no **PostgreSQL** via **Dapper**, gera RCA via **Microsoft.Extensions.AI (Ollama)** protegido por **Polly (Timeout + Retry + Circuit Breaker + Fallback determinístico)** e envia alerta via **Webhook**.
 - **`Sentinel.Shared`**: Contratos, sanitizador de PII (tokens, CPFs, e-mails, senhas de connection string) e algoritmo de fingerprinting.
-- **`infra/`**: `docker-compose.yml` com PostgreSQL 16 + LocalStack (SQS com DLQ + S3).
+- **`infra/`**: `docker-compose.yml` com PostgreSQL 16 + LocalStack (SQS com DLQ + S3) + Ollama opcional (`--profile ai`).
 
 ## Como rodar localmente
 
 1. Subir a infraestrutura (PostgreSQL + LocalStack):
    ```bash
    cd infra && docker compose up -d
+   # Opcional: subir Ollama junto
+   # docker compose --profile ai up -d
    ```
 
 2. Rodar os testes unitários:
@@ -44,6 +46,6 @@ Copiloto de **AIOps & Diagnóstico Automatizado de Incidentes** construído em *
 ## Roadmap
 
 - [x] **Fase 1:** Solution .NET, Ingest API, SQS (LocalStack), Worker, Deduplicação no Postgres (Dapper), Sanitizador de PII e testes unitários.
-- [ ] **Fase 2:** Integração `Microsoft.Extensions.AI` (Ollama / OpenAI) + Polly Circuit Breaker + Webhook Discord/Slack.
+- [x] **Fase 2:** Integração `Microsoft.Extensions.AI` (Ollama) + Polly (Timeout, Retry, Circuit Breaker, Fallback) + Webhook Notifier + testes unitários com `NSubstitute`.
 - [ ] **Fase 3:** `SampleTarget.Api` com falhas simuladas + OpenTelemetry + Grafana.
 - [ ] **Fase 4:** Testcontainers, BDD (Reqnroll), CloudFormation e GitHub Actions + SonarCloud.

@@ -10,8 +10,12 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.SQS" Version="4.1.0.2" />
     <PackageReference Include="Dapper" Version="2.1.100" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="11.0.1" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="10.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="11.0.0" />
     <PackageReference Include="Npgsql" Version="11.0.0" />
+    <PackageReference Include="OllamaSharp" Version="5.5.2" />
+    <PackageReference Include="Polly" Version="8.9.1" />
   </ItemGroup>
 
   <ItemGroup>

@@ -14,7 +14,8 @@ public sealed class Worker(
     IAmazonSQS sqs,
     IConfiguration config,
     IncidentRepository repository,
-    IIncidentDiagnosticService diagnosticService) : BackgroundService
+    IIncidentDiagnosticService diagnosticService,
+    IIncidentNotifier notifier) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -72,6 +73,7 @@ public sealed class Worker(
         {
             var diagnosis = await diagnosticService.DiagnoseAsync(evt, sanitizedMessage, sanitizedStack, ct);
             await repository.SaveDiagnosisAsync(upsert.IncidentId, diagnosis, ct);
+            await notifier.NotifyAsync(upsert.IncidentId, evt, diagnosis, ct);
 
             logger.LogWarning(
                 "New incident {IncidentId} [{Severity}] in {ServiceName}: {Hypothesis}",
